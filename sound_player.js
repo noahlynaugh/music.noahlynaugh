@@ -4,7 +4,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const playGraphicContainer = document.querySelector('.play-button');
     const pauseGraphicContainer = document.querySelector('.playing-button');
     const progressBar = document.querySelector('.progress-bar');
+    const logElement = document.createElement('pre');
+    document.body.appendChild(logElement);
 
+    // Function to log messages to the screen
+    const logMessage = (message) => {
+        logElement.innerText += message + '\n';
+    };
 
     let playAnimation = lottie.loadAnimation({
         container: playGraphicContainer,
@@ -24,13 +30,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to play audio
     const playAudio = () => {
-        audioElement.play();
-        playAnimation.play();
-        playAnimation.addEventListener('complete', () => {
-            playGraphicContainer.style.display = 'none';
-            pauseGraphicContainer.style.display = 'block';
-            pauseAnimation.play();
-        }, { once: true });
+        audioElement.play().then(() => {
+            logMessage('Audio is playing');
+            playAnimation.play();
+            playAnimation.addEventListener('complete', () => {
+                playGraphicContainer.style.display = 'none';
+                pauseGraphicContainer.style.display = 'block';
+                pauseAnimation.play();
+            }, { once: true });
+        }).catch(error => {
+            logMessage('Error playing audio: ' + error);
+            alert('Error playing audio: ' + error);
+        });
     };
 
     // Function to pause audio
@@ -44,12 +55,10 @@ document.addEventListener('DOMContentLoaded', function() {
             playAnimation.setDirection(-1);
             playAnimation.play();
             playAnimation.addEventListener('complete', () => {
-                    //console.log("animation complete");
-                    playAnimation.setDirection(1);
-                    pauseAnimation.loop = true;
-                    pauseGraphicContainer.style.display = 'none';
-                    playGraphicContainer.style.display = 'block';
-                    //console.log("display flipped");
+                playAnimation.setDirection(1);
+                pauseAnimation.loop = true;
+                pauseGraphicContainer.style.display = 'none';
+                playGraphicContainer.style.display = 'block';
             }, { once: true });
         }, { once: true });
     };
@@ -60,24 +69,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const duration = audioElement.duration;
         const progressPercent = (currentTime / duration) * 100;
         progressBar.style.width = progressPercent + '%';
-        if (progressPercent == 100){
-        pauseAnimation.loop = false;
-        pauseAnimation.addEventListener('complete', () => {
-            pauseAnimation.stop();
-            pauseGraphicContainer.style.display = 'none';
-            playGraphicContainer.style.display = 'block';
-            playAnimation.setDirection(-1);
-            playAnimation.play();
-            playAnimation.addEventListener('complete', () => {
-                    //console.log("animation complete");
+        if (progressPercent === 100) {
+            pauseAnimation.loop = false;
+            pauseAnimation.addEventListener('complete', () => {
+                pauseAnimation.stop();
+                pauseGraphicContainer.style.display = 'none';
+                playGraphicContainer.style.display = 'block';
+                playAnimation.setDirection(-1);
+                playAnimation.play();
+                playAnimation.addEventListener('complete', () => {
                     playAnimation.setDirection(1);
                     pauseAnimation.loop = true;
                     pauseGraphicContainer.style.display = 'none';
                     playGraphicContainer.style.display = 'block';
-                    //console.log("display flipped");
+                }, { once: true });
             }, { once: true });
-        }, { once: true });
-        }	
+        }
     };
 
     // Click event listeners
@@ -90,4 +97,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update progress bar during audio playback
     audioElement.addEventListener('timeupdate', updateProgressBar);
+
+    // Event listener for audio load
+    audioElement.addEventListener('canplaythrough', () => {
+        logMessage('Audio can play through');
     });
+
+    // Event listener for audio errors
+    audioElement.addEventListener('error', (e) => {
+        logMessage('Audio error: ' + e.message);
+        alert('Audio error: ' + e.message);
+    });
+});
