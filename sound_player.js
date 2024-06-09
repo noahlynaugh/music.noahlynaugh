@@ -4,13 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const playGraphicContainer = document.querySelector('.play-button');
     const pauseGraphicContainer = document.querySelector('.playing-button');
     const progressBar = document.querySelector('.progress-bar');
-    const logElement = document.createElement('pre');
-    document.body.appendChild(logElement);
 
-    // Function to log messages to the screen
-    const logMessage = (message) => {
-        logElement.innerText += message + '\n';
-    };
 
     let playAnimation = lottie.loadAnimation({
         container: playGraphicContainer,
@@ -38,9 +32,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 pauseGraphicContainer.style.display = 'block';
                 pauseAnimation.play();
             }, { once: true });
-        }).catch(error => {
-            logMessage('Error playing audio: ' + error);
-            alert('Error playing audio: ' + error);
         });
     };
 
@@ -97,15 +88,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update progress bar during audio playback
     audioElement.addEventListener('timeupdate', updateProgressBar);
-
-    // Event listener for audio load
-    audioElement.addEventListener('canplaythrough', () => {
-        logMessage('Audio can play through');
-    });
-
-    // Event listener for audio errors
-    audioElement.addEventListener('error', (e) => {
-        logMessage('Audio error: ' + e.message);
-        alert('Audio error: ' + e.message);
-    });
 });
