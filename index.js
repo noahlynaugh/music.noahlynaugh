@@ -1,3 +1,3 @@
-year = document.querySelector("#year-text-id");
-const currentYear = new Date().getFullYear().toString();
-year.textContent = currentYear;
+import './sound_player.js';
+import './year_update.js';
+import './audio-data.js';
