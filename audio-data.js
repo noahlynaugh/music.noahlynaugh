@@ -75,26 +75,92 @@ document.addEventListener('DOMContentLoaded', () => {
                 pauseAnimation: pauseAnimation
             });
 
-            playButton.addEventListener('click', () => changeAudioData(index));
+            playButton.addEventListener('click', () => {
+                if (currentPlayingIndex !== null) {
+                    // Pause any currently playing audio if different index is clicked
+                    if (currentPlayingIndex !== index) {
+                        pauseAudio(currentPlayingIndex);
+                    }
+                }
+                // Update the currentPlayingIndex
+                currentPlayingIndex = index;
+                // Call changeAudioData to load and play the audio
+                changeAudioData(index);
+            });
+
             playingButton.addEventListener('click', () => pauseAudio(index));
         }
     });
 
-    // Click listener for popup play button
-    popupPlayButton.addEventListener('click', () => {
-        if (currentPlayingIndex !== null) {
-            changeAudioData(currentPlayingIndex);
-        }
-    });
-
-    // Click listener for popup playing button
-    popupPlayingButton.addEventListener('click', () => {
-        if (currentPlayingIndex !== null) {
-            pauseAudio(currentPlayingIndex);
-        }
-    });
-
     // Function to play audio
+    async function playAudio(index, startTime = 0) {
+        const currentAudio = audioData[index];
+        try {
+            audioElement.currentTime = startTime; // Set current time to resume from the provided time
+            console.log(audioElement.currentTime);
+            await audioElement.play();
+            currentAudio.playAnimation.play();
+            popupPlayAnimation.play(); // Start popup play animation
+            currentAudio.playAnimation.addEventListener('complete', () => {
+                currentAudio.playButton.style.display = 'none';
+                currentAudio.playingButton.style.display = 'block';
+                currentAudio.pauseAnimation.play();
+                popupPlayButton.style.display = 'none';
+                popupPlayingButton.style.display = 'block';
+                popupPauseAnimation.play(); // Start popup pause animation
+            }, { once: true });
+        } catch (error) {
+            console.error('Error playing audio:', error);
+        }
+    }
+
+    function pauseAudio(index) {
+        let currentAudio = audioData[index];
+        audioElement.pause();
+        currentAudio.pauseAnimation.loop = false;
+        currentAudio.pauseAnimation.addEventListener('complete', () => {
+            currentAudio.pauseAnimation.stop();
+            currentAudio.playingButton.style.display = 'none';
+            currentAudio.playButton.style.display = 'block';
+            currentAudio.playAnimation.goToAndStop(0); // Reset product card play animation to start
+            popupPlayingButton.style.display = 'none';
+            popupPlayButton.style.display = 'block';
+            popupPlayAnimation.goToAndStop(0); // Reset popup play animation to start
+        }, { once: true });
+    }
+
+    function updateProgressBar() {
+        const popupPlayerDuration = document.getElementById('popup-player-duration');
+        const popupPlayerCurrentTime = document.getElementById('popup-player-current-time');
+        if (currentPlayingIndex === null) return;
+        const currentAudio = audioData[currentPlayingIndex];
+        const currentTime = audioElement.currentTime.toFixed(2);
+        const duration = audioElement.duration.toFixed(2);
+        popupPlayerDuration.textContent = duration;
+        popupPlayerCurrentTime.textContent = currentTime;
+        const progressPercent = (currentTime / duration) * 100;
+        currentAudio.progressBar.style.width = progressPercent + '%';
+        popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
+
+        if (progressPercent === 100) {
+            currentAudio.pauseAnimation.loop = false;
+            currentAudio.pauseAnimation.addEventListener('complete', () => {
+                currentAudio.pauseAnimation.stop();
+                currentAudio.playingButton.style.display = 'none';
+                currentAudio.playButton.style.display = 'block';
+                currentAudio.playAnimation.goToAndStop(0); // Reset product card play animation to start
+                popupPlayingButton.style.display = 'none';
+                popupPlayButton.style.display = 'block';
+                popupPlayAnimation.goToAndStop(0); // Reset popup play animation to start
+            }, { once: true });
+        } else {
+            if (audioElement.paused) {
+                audioData[currentPlayingIndex].playButton.addEventListener('click', () => playAudio(currentPlayingIndex, currentTime));
+            }
+        }
+    }
+
+    // Function to change audio data
     async function changeAudioData(index) {
         if (currentPlayingIndex !== null && currentPlayingIndex !== index) {
             pauseAudio(currentPlayingIndex);
@@ -127,95 +193,9 @@ document.addEventListener('DOMContentLoaded', () => {
         audioElement.removeEventListener('canplaythrough', handleCanPlayThrough);
         audioElement.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
 
-        // Function to play audio
-        async function playAudio(index) {
-            try {
-                let currentAudio = audioData[index];
-
-                // Check if audio was paused and resume from current time
-                if (!audioElement.paused && audioElement.currentTime > 0) {
-                    audioElement.currentTime = audioElement.currentTime;
-                } else {
-                    let newSrc = basePath + currentAudio.url;
-                    audioSource.src = newSrc;
-                    audioElement.load();
-                    await audioElement.play();
-                }
-
-                currentAudio.playAnimation.play();
-                currentAudio.playAnimation.addEventListener('complete', () => {
-                    currentAudio.playButton.style.display = 'none';
-                    currentAudio.playingButton.style.display = 'block';
-                    currentAudio.pauseAnimation.play();
-
-                    // Sync popup playbar animations
-                    popupPlayButton.style.display = 'none';
-                    popupPlayingButton.style.display = 'block';
-                    popupPauseAnimation.play();
-                }, { once: true });
-
-                // Update progress bar during audio playback
-                audioElement.addEventListener('timeupdate', () => {
-                    updateProgressBar(index);
-                });
-
-            } catch (error) {
-                console.error('Error playing audio:', error);
-            }
-        }
-
         function handleCanPlayThrough() {
-            playAudio();
+            playAudio(index, audioElement.currentTime); // Resume from the current time
             audioElement.addEventListener('timeupdate', updateProgressBar);
         }
-
-        playAudio();
     }
-
-    // Function to pause audio
-    function pauseAudio(index) {
-        let currentAudio = audioData[index];
-        audioElement.pause();
-        currentAudio.pauseAnimation.loop = false;
-        currentAudio.pauseAnimation.addEventListener('complete', () => {
-            currentAudio.pauseAnimation.stop();
-            currentAudio.playingButton.style.display = 'none';
-            currentAudio.playButton.style.display = 'block';
-            currentAudio.playAnimation.setDirection(-1);
-            currentAudio.playAnimation.play();
-
-            // Sync popup playbar animations
-            popupPlayingButton.style.display = 'none';
-            popupPlayButton.style.display = 'block';
-            popupPlayAnimation.setDirection(-1);
-            popupPlayAnimation.play();
-        }, { once: true });
-    }
-
-    // Function to update progress bar
-    function updateProgressBar(index) {
-        let currentAudio = audioData[index];
-        const currentTime = audioElement.currentTime;
-        const duration = audioElement.duration;
-        const progressPercent = (currentTime / duration) * 100;
-        currentAudio.progressBar.style.width = progressPercent + '%';
-        popupProgressBar.style.width = progressPercent + '%'; // Update popup progress bar
-
-        if (progressPercent === 100) {
-            currentAudio.pauseAnimation.loop = false;
-            currentAudio.pauseAnimation.addEventListener('complete', () => {
-                currentAudio.pauseAnimation.stop();
-                currentAudio.playingButton.style.display = 'none';
-                currentAudio.playButton.style.display = 'block';
-                currentAudio.playAnimation.setDirection(-1);
-                currentAudio.playAnimation.play();
-
-                // Sync popup playbar animations
-                popupPlayingButton.style.display = 'none';
-                popupPlayButton.style.display = 'block';
-                popupPlayAnimation.setDirection(-1);
-                popupPlayAnimation.play();
-            }, { once: true });
-        }
-    }
-
+});
