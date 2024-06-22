@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             playButton.addEventListener('click', () => {
                 if (currentPlayingIndex !== null) {
                     // Pause any currently playing audio if different index is clicked
-                    if (currentPlayingIndex !== index) {
+                    if (currentPlayingIndex !== null && currentPlayingIndex !== index) {
                         pauseAudio(currentPlayingIndex);
                     }
                 }
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentAudio = audioData[index];
         try {
             audioElement.currentTime = startTime; // Set current time to resume from the provided time
-            console.log(audioElement.currentTime);
+            // console.log(audioElement.currentTime);   // logs current time for debugging
             await audioElement.play();
             currentAudio.playAnimation.play();
             popupPlayAnimation.play(); // Start popup play animation
@@ -118,14 +118,28 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentAudio = audioData[index];
         audioElement.pause();
         currentAudio.pauseAnimation.loop = false;
+        popupPlayAnimation.loop = false;
         currentAudio.pauseAnimation.addEventListener('complete', () => {
+            popupPlayAnimation.stop()
             currentAudio.pauseAnimation.stop();
             currentAudio.playingButton.style.display = 'none';
             currentAudio.playButton.style.display = 'block';
-            currentAudio.playAnimation.goToAndStop(0); // Reset product card play animation to start
             popupPlayingButton.style.display = 'none';
             popupPlayButton.style.display = 'block';
-            popupPlayAnimation.goToAndStop(0); // Reset popup play animation to start
+            currentAudio.playAnimation.setDirection(-1);
+            popupPlayAnimation.setDirection(-1);
+            currentAudio.playAnimation.play();
+            popupPlayAnimation.play();
+            currentAudio.playAnimation.addEventListener('complete', () => {
+                currentAudio.playAnimation.setDirection(1);
+                popupPlayAnimation.setDirection(1);
+                currentAudio.pauseAnimation.loop = true;
+                popupPlayAnimation.loop = true;
+                currentAudio.playingButton.style.display = 'none';
+                currentAudio.playButton.style.display = 'block';
+                popupPlayingButton.style.display = 'none';
+                popupPlayButton.style.display = 'block';
+            }, { once: true });
         }, { once: true });
     }
 
@@ -142,17 +156,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentAudio.progressBar.style.width = progressPercent + '%';
         popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
 
-        if (progressPercent === 100) {
-            currentAudio.pauseAnimation.loop = false;
-            currentAudio.pauseAnimation.addEventListener('complete', () => {
-                currentAudio.pauseAnimation.stop();
-                currentAudio.playingButton.style.display = 'none';
-                currentAudio.playButton.style.display = 'block';
-                currentAudio.playAnimation.goToAndStop(0); // Reset product card play animation to start
-                popupPlayingButton.style.display = 'none';
-                popupPlayButton.style.display = 'block';
-                popupPlayAnimation.goToAndStop(0); // Reset popup play animation to start
-            }, { once: true });
+        if (progressPercent >= 99.99) {
+            audioElement.currentTime = 0; // Reset audio to start
+            pauseAudio(currentPlayingIndex); // Pause the audio to reset the UI
         } else {
             if (audioElement.paused) {
                 audioData[currentPlayingIndex].playButton.addEventListener('click', () => playAudio(currentPlayingIndex, currentTime));
@@ -186,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         popupPlayerGenre.textContent = currentAudio.genre;
         popupPlayerSubgenre.textContent = currentAudio.subgenre;
 
-        if (popupPlayer.style.display === '') {
+        if (popupPlayer.style.display === '' || popupPlayer.style.display === 'none') {
             popupPlayer.style.display = 'block';
         }
 
@@ -198,4 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
             audioElement.addEventListener('timeupdate', updateProgressBar);
         }
     }
+
+    // Event listener for when the audio ends
+    audioElement.addEventListener('ended', () => {
+        audioElement.currentTime = 0;
+        pauseAudio(currentPlayingIndex);
+    })
 });
