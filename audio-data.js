@@ -4,16 +4,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioElement = document.getElementById('audio');
     const audioSource = audioElement.querySelector('source');
 
+    // Retrieve the stored value from localStorage
+    let storedValue = localStorage.getItem('popupPlayerVisible');
+
+    // Make a state varible that keeps track of play/paused state
+    let playPause = localStorage.getItem('playPauseState');
+
     // Initialize an empty array to store the data
     let audioData = [];
 
     // Variable to store the index of the currently playing audio
     let currentPlayingIndex = null;
 
+
+    if (playPause === 'play'){
+        console.log("pretty boy");
+        let storedIndex = localStorage.getItem('currentPlayingIndex');
+        changeAudioPlayer(storedIndex);
+    }
+    else{
+        console.log("ugly boy");
+    }
+
+    if (storedValue === 'flex') {
+        console.log('Keep popupPlayer Data');
+        let storedIndex = localStorage.getItem('currentPlayingIndex') || null;
+        changeAudioPlayer(storedIndex);
+    } 
+    else {
+        console.log('Nothing playing');
+    }
+
     // Reference popup playbar elements
     const popupPlayButton = document.getElementById('popup-play-button');
     const popupPlayingButton = document.getElementById('popup-playing-button');
-    const popupProgressBar = document.getElementById('popup-progress-bar');
 
     // Initialize Lottie animations for popup playbar
     let popupPlayAnimation = lottie.loadAnimation({
@@ -88,17 +112,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 changeAudioData(index);
             });
 
+            popupPlayButton.addEventListener('click',() =>{
+                currentPlayingIndex = localStorage.getItem('currentPlayingIndex');
+                    if (currentPlayingIndex !== null && currentPlayingIndex !== index) {
+                        let currentTime = localStorage.getItem('currentPlayingTime');
+                        playStoredAudio(currentTime);
+                    }
+                });
+
             playingButton.addEventListener('click', () => pauseAudio(index));
-        }
+
+            popupPlayingButton.addEventListener('click', () =>{
+                currentPlayingIndex = localStorage.getItem('currentPlayingIndex');
+                if (currentPlayingIndex !== null && currentPlayingIndex !== index) {
+                    pauseStoredAudio();
+                }
+            });
+        };
     });
+
+    // Function to add a played song to localStorage
+    function addPlayedSong(audioData) {
+        // Retrieve existing played songs from localStorage or initialize an empty array
+        let playedSongs = JSON.parse(localStorage.getItem('playedSongs')) || [];
+
+        // Check if an entry with the same url already exists
+        const existingIndex = playedSongs.findIndex(item => item.url === audioData.url);
+
+        if (existingIndex !== -1) {
+            // If found, replace the existing entry
+            localStorage.setItem('currentPlayingIndex', existingIndex);
+        } else {
+            // Extract only the necessary data to store
+        let playedSongsIndex = (playedSongs.length);
+        let dataToStore = {
+            url: audioData.url,
+            image: audioData.image,
+            title: audioData.title,
+            genre: audioData.genre,
+            subgenre: audioData.subgenre,
+            category: audioData.category,
+            index: playedSongsIndex
+        }
+            // If not found, add the new entry
+            playedSongs.push(dataToStore);
+            localStorage.setItem('currentPlayingIndex', dataToStore.index);
+        }
+        
+
+        // Store the updated array back into localStorage
+        localStorage.setItem('playedSongs', JSON.stringify(playedSongs));
+    }
+
 
     // Function to play audio
     async function playAudio(index, startTime = 0) {
         const currentAudio = audioData[index];
         try {
             audioElement.currentTime = startTime; // Set current time to resume from the provided time
-            // console.log(audioElement.currentTime);   // logs current time for debugging
+
             await audioElement.play();
+            addPlayedSong(currentAudio)
+            playPause = 'play'
+            localStorage.setItem('playPauseState', playPause);
             currentAudio.playAnimation.play();
             popupPlayAnimation.play(); // Start popup play animation
             currentAudio.playAnimation.addEventListener('complete', () => {
@@ -114,13 +190,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function playStoredAudio(startTime){
+        try {
+            audioElement.currentTime = startTime; // Set current time to resume from the provided time
+            await audioElement.play();
+            playPause = 'play'
+            localStorage.setItem('playPauseState', playPause);
+            popupPlayAnimation.play(); // Start popup play animation
+            popupPlayAnimation.addEventListener('complete', () => {
+                popupPlayButton.style.display = 'none';
+                popupPlayingButton.style.display = 'block';
+                popupPauseAnimation.play(); // Start popup pause animation
+            }, { once: true });
+        } catch (error) {
+            console.error('Error playing audio:', error);
+        }
+    }
+
     function pauseAudio(index) {
         let currentAudio = audioData[index];
+        playPause = "pause"
+        localStorage.setItem('playPauseState', playPause);
         audioElement.pause();
         currentAudio.pauseAnimation.loop = false;
-        popupPlayAnimation.loop = false;
+        popupPauseAnimation.loop = false;
         currentAudio.pauseAnimation.addEventListener('complete', () => {
-            popupPlayAnimation.stop()
+            popupPauseAnimation.stop()
             currentAudio.pauseAnimation.stop();
             currentAudio.playingButton.style.display = 'none';
             currentAudio.playButton.style.display = 'block';
@@ -134,9 +229,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentAudio.playAnimation.setDirection(1);
                 popupPlayAnimation.setDirection(1);
                 currentAudio.pauseAnimation.loop = true;
-                popupPlayAnimation.loop = true;
+                popupPauseAnimation.loop = true;
                 currentAudio.playingButton.style.display = 'none';
                 currentAudio.playButton.style.display = 'block';
+                popupPlayingButton.style.display = 'none';
+                popupPlayButton.style.display = 'block';
+            }, { once: true });
+        }, { once: true });
+        
+    }
+
+    async function pauseStoredAudio(){
+        playPause = "pause"
+        localStorage.setItem('playPauseState', playPause);
+        audioElement.pause();
+        popupPauseAnimation.loop = false;
+        popupPauseAnimation.addEventListener('complete', () =>{
+            popupPlayingButton.style.display = 'none';
+            popupPlayButton.style.display = 'block';
+            popupPlayAnimation.setDirection(-1);
+            popupPlayAnimation.play();
+            popupPlayAnimation.addEventListener('complete', () => {
+                popupPlayAnimation.setDirection(1);
+                popupPauseAnimation.loop = true;
                 popupPlayingButton.style.display = 'none';
                 popupPlayButton.style.display = 'block';
             }, { once: true });
@@ -146,24 +261,54 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateProgressBar() {
         const popupPlayerDuration = document.getElementById('popup-player-duration');
         const popupPlayerCurrentTime = document.getElementById('popup-player-current-time');
-        if (currentPlayingIndex === null) return;
-        const currentAudio = audioData[currentPlayingIndex];
-        const currentTime = audioElement.currentTime.toFixed(2);
-        const duration = audioElement.duration.toFixed(2);
-        popupPlayerDuration.textContent = duration;
-        popupPlayerCurrentTime.textContent = currentTime;
-        const progressPercent = (currentTime / duration) * 100;
-        currentAudio.progressBar.style.width = progressPercent + '%';
-        popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
+        const popupProgressBar  = document.getElementById('popup-progress-bar');
+        for (let i = 0; i < audioData.length; i++){
+            let audioIndex = audioData[i];
+            let productUrl = (audioIndex.url);
+            productUrl = basePath + productUrl;
+            if (productUrl == audioSource.src){
+                let currentAudio = audioIndex;
+                const currentTime = audioElement.currentTime.toFixed(2);
+                const duration = audioElement.duration.toFixed(2);
+                popupPlayerDuration.textContent = duration;
+                popupPlayerCurrentTime.textContent = currentTime;
+                const progressPercent = (currentTime / duration) * 100;
+                currentAudio.progressBar.style.width = progressPercent + '%'; //Update the product car progress bar
+                popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
 
-        if (progressPercent >= 99.99) {
-            audioElement.currentTime = 0; // Reset audio to start
-            pauseAudio(currentPlayingIndex); // Pause the audio to reset the UI
-        } else {
-            if (audioElement.paused) {
-                audioData[currentPlayingIndex].playButton.addEventListener('click', () => playAudio(currentPlayingIndex, currentTime));
+                if (currentTime >= duration -0.10) {
+                    console.log('Audio has ended');
+                    playPause = "pause"
+                    localStorage.setItem('playPauseState', JSON.stringify(playPause));
+                    audioElement.currentTime = 0; // Reset audio to start
+                    pauseAudio(i); // Pause the audio to reset the UI
+                }  
+    
+            localStorage.setItem('currentPlayingTime', currentTime);
+            localStorage.setItem('currentDuration', duration);
+            }
+            else{
+                // console.log("No Match Found");
+                const currentTime = audioElement.currentTime.toFixed(2);
+                const duration = audioElement.duration.toFixed(2);
+                popupPlayerDuration.textContent = duration;
+                popupPlayerCurrentTime.textContent = currentTime;
+                const progressPercent = (currentTime / duration) * 100;
+                popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
+
+                if (currentTime >= duration -0.10) {
+                    playPause = "pause"
+                    localStorage.setItem('playPauseState', JSON.stringify(playPause));
+                    audioElement.currentTime = 0; // Reset audio to start
+                    pauseStoredAudio(); // Pause the audio to reset the UI
+                }     
+
+                localStorage.setItem('currentPlayingTime', currentTime);
+                localStorage.setItem('currentDuration', duration);
             }
         }
+        
+
     }
 
     // Function to change audio data
@@ -193,21 +338,65 @@ document.addEventListener('DOMContentLoaded', () => {
         popupPlayerSubgenre.textContent = currentAudio.subgenre;
 
         if (popupPlayer.style.display === '' || popupPlayer.style.display === 'none') {
-            popupPlayer.style.display = 'block';
+            popupPlayer.style.display = 'flex';
+            localStorage.setItem('popupPlayerVisible', (popupPlayer.style.display));
         }
 
-        audioElement.removeEventListener('canplaythrough', handleCanPlayThrough);
-        audioElement.addEventListener('canplaythrough', handleCanPlayThrough, { once: true });
 
-        function handleCanPlayThrough() {
-            playAudio(index, audioElement.currentTime); // Resume from the current time
-            audioElement.addEventListener('timeupdate', updateProgressBar);
-        }
+            if (audioElement.paused){
+                playAudio(index, audioElement.currentTime); // Resume from the current time
+            }
+        
     }
 
-    // Event listener for when the audio ends
-    audioElement.addEventListener('ended', () => {
-        audioElement.currentTime = 0;
-        pauseAudio(currentPlayingIndex);
-    })
+    // Function to change audio audioPlayerData
+    async function changeAudioPlayer(index) {
+        let playedAudioData = JSON.parse(localStorage.getItem('playedSongs'));
+        console.log(index);
+        console.log(playedAudioData);
+        if (!playedAudioData || index < 0 || index > playedAudioData.length) {
+            console.log('Invalid index or no played songs data found.');
+            return;
+        }
+
+        const popupProgressBar = document.getElementById('popup-progress-bar');
+        let selectedAudio = playedAudioData[index];
+        let newSrc = basePath + selectedAudio.url;
+        audioSource.src = newSrc;
+        audioElement.load();
+        let storedTime = localStorage.getItem('currentPlayingTime');
+        let duration = localStorage.getItem('currentDuration');
+        audioElement.currentTime = storedTime; // Set current time to resume from the provided time
+
+        // Update popup player details
+        const popupPlayer = document.getElementById('popup-player');
+        const popupPlayerImage = document.getElementById('popup-player-image');
+        const popupPlayerTitle = document.getElementById('popup-player-title');
+        const popupPlayerCategory = document.getElementById('popup-player-category');
+        const popupPlayerGenre = document.getElementById('popup-player-genre');
+        const popupPlayerSubgenre = document.getElementById('popup-player-subgenre');
+
+        popupPlayerImage.src = selectedAudio.image;
+        popupPlayerTitle.textContent = selectedAudio.title;
+        popupPlayerCategory.textContent = selectedAudio.category;
+        popupPlayerGenre.textContent = selectedAudio.genre;
+        popupPlayerSubgenre.textContent = selectedAudio.subgenre;
+
+        const popupPlayerDuration = document.getElementById('popup-player-duration');
+        const popupPlayerCurrentTime = document.getElementById('popup-player-current-time');
+
+        const currentTime = audioElement.currentTime.toFixed(2);
+        const progressPercent = (currentTime / duration) * 100
+        popupPlayerDuration.textContent = duration;
+        popupPlayerCurrentTime.textContent = currentTime;
+        popupPlayer.style.display = 'flex';
+        popupProgressBar.style.width = progressPercent + '%';  // Update popup progress bar
+
+    }
+
+    
+    // Event listener for timeupdate to update progress bars
+    audioElement.addEventListener('timeupdate', updateProgressBar);
+
+
 });
