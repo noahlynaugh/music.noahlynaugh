@@ -1,0 +1,9 @@
+:root{
+    --width--max:1440px;
+}
+
+@media (max-width: 790px){
+    .root{
+        --width--max:720px;
+    }
+}

@@ -1,0 +1,104 @@
+:root {
+    --font-ratio: 1.333;
+    --font-size: 1.2rem;
+    --font-size-1: calc(var(--font-size) * var(--font-ratio));
+    --font-size-2: calc(var(--font-size-1) * var(--font-ratio));
+    --font-size-3: calc(var(--font-size-2) * var(--font-ratio));
+    --font-size-4: calc(var(--font-size-3) * var(--font-ratio));
+    --font-size-5: calc(var(--font-size-4) * var(--font-ratio));
+    --font-size-6: calc(var(--font-size-5) * var(--font-ratio));
+
+    --line-height-1: calc(var(--font-size) * 1);
+    --line-height-2: calc(var(--font-size) * 2);
+    --line-height-3: calc(var(--font-size) * 3);
+    --line-height-4: calc(var(--font-size) * 4);
+    --line-height-5: calc(var(--font-size) * 5);
+    --line-height-6: calc(var(--font-size) * 6);
+  }
+
+/* h1{
+    font-size: var(--font-size-6);
+    font-weight: 500;
+    margin:0;
+    line-height: var(--line-height-6);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+}
+h2 {
+    font-size: var(--font-size-5);
+    font-weight: 500;
+    margin:0;
+    line-height: var(--line-height-5);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+}
+h3 {
+    font-size: var(--font-size-4);
+    font-weight: 400;
+    margin:0;
+    line-height: var(--line-height-4);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+}
+h4 {
+    font-size: var(--font-size-3);
+    font-weight: 400;
+    margin:0;
+    line-height: var(--line-height-3);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+}
+h5 {
+    font-size: var(--font-size-2);
+    font-weight: 400;
+    margin: 0;
+    line-height: var(--line-height-2);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+}
+h6 {
+    font-size: var(--font-size-1);
+    font-weight: 400;
+    margin: 0;
+    line-height: var(--line-height-1);
+    margin-bottom: var(--line-height-1);
+    text-wrap: balance;
+} */
+p {
+    font-size: var(--font-size-5);
+    font-variation-settings: "wght" 400;
+    text-wrap: pretty;
+}
+/* a{
+    font-size: var(--font-size-1);
+    font-weight: 400;
+    margin:0;
+    line-height: var(--line-height-1);
+}
+small{
+    text-decoration: overline;
+    font-size: var(--font-size);
+    font-weight: 900;
+    margin:0;
+    line-height: var(--line-height);
+    opacity: .4;
+}
+@media (max-width: 992px){
+    a{
+        font-size: var(--font-size-6);
+        font-weight: 300;
+        margin:0;
+        line-height: var(--line-height-6);
+    }
+  }
+  
+  @media (max-width: 480px){
+    a{
+        font-size: var(--font-size-6);
+        font-weight:300;
+        margin:0;
+        line-height: var(--line-height-6);
+    }
+  }
+ */
+
